@@ -3,41 +3,27 @@
 """TODO: add high-level description of this Python script"""
 
 import argparse
+
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 
+from utils import read_corpus
+
 
 def create_arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-tf", "--train_file", default='train.txt', type=str,
-                        help="Train file to learn from (default train.txt)")
-    parser.add_argument("-df", "--dev_file", default='dev.txt', type=str,
-                        help="Dev file to evaluate on (default dev.txt)")
-    parser.add_argument("-s", "--sentiment", action="store_true",
+    parser.add_argument("-tf", "--train_file", default='datasets/train.txt', type=str,
+                        help="Train file to learn from (default datasets/train.txt)")
+    parser.add_argument("-df", "--dev_file", default='datasets/dev.txt', type=str,
+                        help="Dev file to evaluate on (default datasets/dev.txt)")
+    parser.add_argument("-s", "--sentiment", action="store_false",
                         help="Do sentiment analysis (2-class problem)")
     parser.add_argument("-t", "--tfidf", action="store_true",
                         help="Use the TF-IDF vectorizer instead of CountVectorizer")
     args = parser.parse_args()
     return args
-
-
-def read_corpus(corpus_file, use_sentiment):
-    """TODO: add function description"""
-    documents = []
-    labels = []
-    with open(corpus_file, encoding='utf-8') as in_file:
-        for line in in_file:
-            tokens = line.strip().split()
-            documents.append(tokens[3:])
-            if use_sentiment:
-                # 2-class problem: positive vs negative
-                labels.append(tokens[1])
-            else:
-                # 6-class problem: books, camera, dvd, health, music, software
-                labels.append(tokens[0])
-    return documents, labels
 
 
 def identity(inp):
