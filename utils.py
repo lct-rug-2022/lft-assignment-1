@@ -22,11 +22,11 @@ def write_corpus(X: list[str], y: list[str], corpus_file: str, use_sentiment: bo
     with open(corpus_file, 'w', encoding='utf-8') as f:
         if use_sentiment:
             f.writelines(
-                ' '.join(['-', y_sample, *X_sample])
+                ' '.join(['-', y_sample, *X_sample, '\n'])
                 for X_sample, y_sample in zip(X, y)
             )
         else:
             f.writelines(
-                ' '.join([y_sample, '-', *X_sample])
+                ' '.join([y_sample, '-', *X_sample, '\n'])
                 for X_sample, y_sample in zip(X, y)
             )
