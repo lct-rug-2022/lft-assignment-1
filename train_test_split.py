@@ -5,7 +5,7 @@ import argparse
 
 from sklearn.model_selection import train_test_split
 
-from utils import read_corpus, write_corpus
+from utils import read_corpus
 
 
 def create_arg_parser():
@@ -28,12 +28,18 @@ if __name__ == "__main__":
     # TODO: comment
     X, y = read_corpus(args.dataset_file, args.sentiment)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
+    with open(args.dataset_file, encoding='utf-8') as f:
+        lines = [l for l in f]
+
+    X_train, X_test = train_test_split(
+        lines,
         train_size=0.9,
         random_state=42,
         shuffle=True
     )
 
-    write_corpus(X_train, y_train, args.train_file)
-    write_corpus(X_test, y_test, args.test_file)
+    with open(args.train_file, 'w', encoding='utf-8') as f:
+        f.write(''.join(X_train))
+
+    with open(args.test_file, 'w', encoding='utf-8') as f:
+        f.write(''.join(X_test))

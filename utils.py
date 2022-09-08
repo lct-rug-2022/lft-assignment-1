@@ -14,19 +14,3 @@ def read_corpus(corpus_file: str, use_sentiment: bool = False) -> tuple[list[lis
                 # 6-class problem: books, camera, dvd, health, music, software
                 labels.append(tokens[0])
     return documents, labels
-
-
-def write_corpus(X: list[str], y: list[str], corpus_file: str, use_sentiment: bool = False) -> None:
-    """TODO: add function description"""
-
-    with open(corpus_file, 'w', encoding='utf-8') as f:
-        if use_sentiment:
-            f.writelines(
-                ' '.join(['-', y_sample, *X_sample, '\n'])
-                for X_sample, y_sample in zip(X, y)
-            )
-        else:
-            f.writelines(
-                ' '.join([y_sample, '-', *X_sample, '\n'])
-                for X_sample, y_sample in zip(X, y)
-            )

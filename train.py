@@ -50,7 +50,10 @@ if __name__ == "__main__":
     # Combine the vectorizer with a Naive Bayes classifier
     # Of course you have to experiment with different classifiers
     # You can all find them through the sklearn library
-    classifier = Pipeline([('vec', vec), ('cls', MultinomialNB())])
+    classifier = Pipeline([
+        ('vec', vec),
+        ('cls', MultinomialNB())
+    ])
 
     # TODO: comment this
     classifier.fit(X_train, Y_train)
