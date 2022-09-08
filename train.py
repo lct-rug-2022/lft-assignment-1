@@ -18,7 +18,7 @@ def create_arg_parser():
                         help="Train file to learn from (default datasets/train.txt)")
     parser.add_argument("-ttf", "--test_file", default='datasets/test.txt', type=str,
                         help="Dev file to evaluate on (default datasets/test.txt)")
-    parser.add_argument("-s", "--sentiment", action="store_false",
+    parser.add_argument("-s", "--sentiment", action="store_true",
                         help="Do sentiment analysis (2-class problem)")
     parser.add_argument("-t", "--tfidf", action="store_true",
                         help="Use the TF-IDF vectorizer instead of CountVectorizer")

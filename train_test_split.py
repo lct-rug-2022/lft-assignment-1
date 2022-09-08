@@ -12,7 +12,7 @@ def create_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--dataset_file", default='datasets/reviews.txt', type=str,
                         help="Full dataset file to split (default datasets/reviews.txt)")
-    parser.add_argument("-s", "--sentiment", action="store_false",
+    parser.add_argument("-s", "--sentiment", action="store_true",
                         help="Do sentiment analysis (2-class problem)")
     parser.add_argument("-tf", "--train_file", default='datasets/train.txt', type=str,
                         help="Train file to learn from (default datasets/train.txt)")
