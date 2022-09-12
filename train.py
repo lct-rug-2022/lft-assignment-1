@@ -9,7 +9,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 
-from utils import read_corpus
+from utils import read_corpus, cv_kfold
 
 
 def create_arg_parser():
@@ -22,6 +22,10 @@ def create_arg_parser():
                         help="Do sentiment analysis (2-class problem)")
     parser.add_argument("-t", "--tfidf", action="store_true",
                         help="Use the TF-IDF vectorizer instead of CountVectorizer")
+    parser.add_argument("-k", "--k_fold_cv", default=1, type=int,
+                        help="K in K-fold cross validation")
+    parser.add_argument("-r", "--k_fold_cv_repetitions", default=1, type=int,
+                        help="Repetitions in K-fold cross validation")
     args = parser.parse_args()
     return args
 
@@ -42,10 +46,10 @@ if __name__ == "__main__":
     # We use a dummy function as tokenizer and preprocessor,
     # since the texts are already preprocessed and tokenized.
     if args.tfidf:
-        vec = TfidfVectorizer(preprocessor=identity, tokenizer=identity)
+        vec = TfidfVectorizer(preprocessor=identity)
     else:
         # Bag of Words vectorizer
-        vec = CountVectorizer(preprocessor=identity, tokenizer=identity)
+        vec = CountVectorizer(preprocessor=identity)
 
     # Combine the vectorizer with a Naive Bayes classifier
     # Of course you have to experiment with different classifiers
@@ -55,12 +59,17 @@ if __name__ == "__main__":
         ('cls', MultinomialNB())
     ])
 
-    # TODO: comment this
-    classifier.fit(X_train, Y_train)
+    kfold_result = cv_kfold(
+        classifier,
+        X_train,
+        Y_train,
+        accuracy_score,
+        k=5,
+        verbose=1,
+    )
 
-    # TODO: comment this
-    Y_pred = classifier.predict(X_test)
-
-    # TODO: comment this
-    acc = accuracy_score(Y_test, Y_pred)
-    print(f"Final accuracy: {acc}")
+    print('mean_score', kfold_result['mean_score'])
+    print('mean_oof_score', kfold_result['mean_oof_score'])
+    print('full_oof_scores', kfold_result['full_oof_scores'])
+    print('oof_scores', kfold_result['oof_scores'])
+    print('oof_score', kfold_result['oof_score'])
