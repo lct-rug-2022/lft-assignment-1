@@ -1,6 +1,7 @@
 import typing as tp
 from collections.abc import Callable
 from copy import copy, deepcopy
+import time
 
 import numpy as np
 import pandas as pd
@@ -33,6 +34,66 @@ def read_corpus(
                 # 6-class problem: books, camera, dvd, health, music, software
                 labels.append(tokens[0])
     return documents, labels
+
+
+def train_validate_split(
+        model: BaseEstimator,
+        data_train: list,
+        target_train: list,
+        data_val: list,
+        target_val: list,
+        scorer: Callable[[tp.Any, tp.Any], float],
+        data_test: list | None = None,
+        *,
+        verbose: int = 1,
+) -> dict[str, tp.Any]:
+    """Fit predict model multiple times with k-fold cross validation
+    :param model: Model to be trained
+    :param data: train data to perform k-fold cv
+    :param target: target train data
+    :param scorer: function to score prediction. args: target, prediction
+    :param data_test: additional data to never train and only test on it
+    :param k: number of folds in cross validation
+    :param r: number repetitions of cv
+    :param verbose: lager - verbose
+    :return: dict with results of cv
+    """
+    data_train, data_val = np.array(data_train), np.array(data_val)
+    target_train, target_val = np.array(target_train), np.array(target_val)
+
+    # exit(0)
+
+    # Fit model in current fold
+    if verbose > 1:
+        print('  Fitting model...')
+    start_time = time.time()
+    model.fit(data_train, target_train)
+    end_time = time.time()
+
+    # predict for out-fold and save it for validation
+    if verbose > 1:
+        print('  Predicting oof...')
+    pred_val = model.predict(data_val)
+
+    # Score for out-fold
+    if verbose > 1:
+        print('  Scoring oof...')
+    score_fold = scorer(target_val, pred_val)
+    if verbose > 1:
+        print(f'  Fold score: {score_fold}')
+
+    # Predict for test and save average
+    # if data_test is not None:
+    #     if verbose > 1:
+    #         print('Predicting test...')
+    #     # pred_test += model_fold.predict(data_test) / float(k*r)
+    #     pred_test = model_fold.predict(data_test)
+
+    return {
+        'pred_val': pred_val,
+        'score': score_fold,
+        'time': end_time - start_time,
+    }
 
 
 def cv_kfold(
@@ -96,24 +157,24 @@ def cv_kfold(
             target_train, target_val = target[train_index], target[val_index]
 
             # Fit model in current fold
-            if verbose > 1:
-                print('  Fitting model...')
-            # model_fold = tp.cast(clone(model), model.__class__)
             model_fold = deepcopy(model)
-            model_fold.fit(data_train, target_train)
+            fold_result = train_validate_split(
+                model_fold,
+                data_train, target_train,
+                data_val, target_val,
+                scorer,
+                verbose=verbose,
+            )
 
-            # predict for out-fold and save it for validation
-            if verbose > 1:
-                print('  Predicting oof...')
-            pred_val = model_fold.predict(data_val)
+            pred_val = fold_result['pred_val']
+            score_fold = fold_result['score']
+
+            # save for out-fold validation
             # TODO: r>1 for pred_train[val_index] += pred_val / float(r)
             pred_train[val_index] = pred_val
             pred_split_train[val_index] = pred_val
 
             # Score for out-fold
-            if verbose > 1:
-                print('  Scoring oof...')
-            score_fold = scorer(target_val, pred_val)
             mean_score += score_fold / float(k*r)
             full_oof_score[-1].append(score_fold)
             if verbose > 1:
