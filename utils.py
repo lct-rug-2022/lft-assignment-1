@@ -140,6 +140,7 @@ def cv_kfold(
 
     mean_score = 0
     full_oof_score, split_oof_score = [], []
+    times = []
 
     rep_gen = tqdm(range(r), desc='Repetition') if verbose and r != 1 else range(r)
     for j in rep_gen:
@@ -166,6 +167,7 @@ def cv_kfold(
                 verbose=verbose,
             )
 
+            times.append(fold_result['time'])
             pred_val = fold_result['pred_val']
             score_fold = fold_result['score']
 
@@ -197,5 +199,7 @@ def cv_kfold(
         'oof_scores': split_oof_score,
         'full_oof_scores': full_oof_score,
         'oof_score': scorer(target, pred_train),
-        'model_str': str(model)
+        # 'model_str': str(model),
+        'times': times,
+        'mean_time': np.mean(times),
     }

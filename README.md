@@ -1,2 +1,3 @@
-# lft-assignment-1
-Learning From Data Assignment 1
+# Learning From Data Assignment 1: Multi-domain Text Reviews Category Prediction
+
+
