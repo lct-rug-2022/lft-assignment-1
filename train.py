@@ -17,7 +17,7 @@ from utils import read_corpus
 @click.command()
 @click.option('-tf', '--train_file', default=Path('datasets/train.txt'), type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=Path), help='Train file to learn from')
 @click.option('-ttf', '--test_file', default=Path('datasets/test.txt'), type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=Path), help='Test data file')
-@click.option('-m', '--model_file', default=Path('pipeline.pkl'), type=click.Path(file_okay=True, dir_okay=False, writable=True, path_type=Path), help='Save model to file')
+@click.option('-m', '--model_file', default=Path('model/pipeline.pkl'), type=click.Path(file_okay=True, dir_okay=False, writable=True, path_type=Path), help='Save model to file')
 def main(
     train_file: Path,
     test_file: Path,
