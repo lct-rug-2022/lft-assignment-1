@@ -9,11 +9,18 @@ sourse .venv/bin/activate
 pip isntall -U -r requitements.txt
 ```
 
-### Run
+### Training
 
 We provide `train.py` script accepting train and test dataset and return model score and save pipeline as `--model_file`
 ```shell
 python train.py --help
+```
+
+### Testing 
+
+We provide `test.py` script and `pipeline.pkl`with saved model to run it on any test data
+```shell
+python test.py --help
 ```
 
 
