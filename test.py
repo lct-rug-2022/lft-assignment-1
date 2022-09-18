@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 """Test script to run saved model on any data"""
 
-import time
 from pathlib import Path
 
 import click
 import joblib
 from sklearn import metrics
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline
-from sklearn.svm import LinearSVC
 
 from utils import read_corpus
 

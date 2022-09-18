@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Dataset train/test split script"""
+
 from pathlib import Path
 
 import click
