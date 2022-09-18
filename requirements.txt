@@ -4,13 +4,13 @@ pandas>=1.3.0,<2.0.0
 
 # ml and processing
 scikit-learn>=1.1.0,<2.0.0
-
-joblib>=1.0.0,<2.0.0
 nltk>=3.5,<4.0
 spacy>=3.3.0,<4.0.0
 
 # optimisation
 git+https://github.com/hyperopt/hyperopt-sklearn.git
+git+https://github.com/fmfn/BayesianOptimization.git
+scikit-optimize>=0.9.0,<0.10.0
 
 # utils
 joblib>=1.0.0,<2.0.0
