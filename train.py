@@ -1,21 +1,17 @@
 #!/usr/bin/env python
+"""Training script of the best model """
 
-"""TODO: add high-level description of this Python script"""
-
-import argparse
 import time
 from pathlib import Path
 
 import click
 import joblib
 from sklearn import metrics
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 
-from utils import read_corpus, cv_kfold
+from utils import read_corpus
 
 
 @click.command()
@@ -46,13 +42,21 @@ def main(
     print(f'  f1-micro train score: {train_f1:.4f}')
 
     print('Validate model...')
-    test_f1 = metrics.f1_score(y_test, pipeline.predict(X_test), average='micro')
+    test_predict = pipeline.predict(X_test)
+    test_f1 = metrics.f1_score(y_test, test_predict, average='micro')
+    test_recall = metrics.recall_score(y_test, test_predict, average='micro')
+    test_precision = metrics.precision_score(y_test, test_predict, average='micro')
+    test_accuracy = metrics.accuracy_score(y_test, test_predict)
     print(f'  f1-micro test score: {test_f1:.4f}')
+    print(f'  recall-micro test score: {test_recall:.4f}')
+    print(f'  precision-micro test score: {test_precision:.4f}')
+    print(f'  accuracy test score: {test_accuracy:.4f}')
 
     if model_file:
         print(f'Saving model to {model_file}...')
         joblib.dump(pipeline, model_file)
         print('  done')
+
 
 if __name__ == '__main__':
     main()
