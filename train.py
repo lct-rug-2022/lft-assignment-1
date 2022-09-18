@@ -3,73 +3,56 @@
 """TODO: add high-level description of this Python script"""
 
 import argparse
+import time
+from pathlib import Path
 
+import click
+import joblib
+from sklearn import metrics
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
+from sklearn.svm import LinearSVC
 
 from utils import read_corpus, cv_kfold
 
 
-def create_arg_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-tf", "--train_file", default='datasets/train.txt', type=str,
-                        help="Train file to learn from (default datasets/train.txt)")
-    parser.add_argument("-ttf", "--test_file", default='datasets/test.txt', type=str,
-                        help="Dev file to evaluate on (default datasets/test.txt)")
-    parser.add_argument("-s", "--sentiment", action="store_true",
-                        help="Do sentiment analysis (2-class problem)")
-    parser.add_argument("-t", "--tfidf", action="store_true",
-                        help="Use the TF-IDF vectorizer instead of CountVectorizer")
-    parser.add_argument("-k", "--k_fold_cv", default=1, type=int,
-                        help="K in K-fold cross validation")
-    parser.add_argument("-r", "--k_fold_cv_repetitions", default=1, type=int,
-                        help="Repetitions in K-fold cross validation")
-    args = parser.parse_args()
-    return args
+@click.command()
+@click.option('-tf', '--train_file', default=Path('datasets/train.txt'), type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=Path), help='Train file to learn from')
+@click.option('-ttf', '--test_file', default=Path('datasets/test.txt'), type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=Path), help='Test data file')
+@click.option('-m', '--model_file', default=None, type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=True, path_type=Path), help='Save model to file')
+def main(
+    train_file: Path,
+    test_file: Path,
+    model_file: Path,
+) -> None:
+    X_train, y_train = read_corpus(train_file)
+    X_test, y_test = read_corpus(test_file)  # use it carefully, really train set
 
-
-def identity(inp):
-    """Dummy function that just returns the input"""
-    return inp
-
-
-if __name__ == "__main__":
-    args = create_arg_parser()
-
-    # TODO: comment
-    X_train, Y_train = read_corpus(args.train_file, args.sentiment)
-    X_test, Y_test = read_corpus(args.test_file, args.sentiment)  # use it carefully, really train set
-
-    # Convert the texts to vectors
-    # We use a dummy function as tokenizer and preprocessor,
-    # since the texts are already preprocessed and tokenized.
-    if args.tfidf:
-        vec = TfidfVectorizer(preprocessor=identity)
-    else:
-        # Bag of Words vectorizer
-        vec = CountVectorizer(preprocessor=identity)
-
-    # Combine the vectorizer with a Naive Bayes classifier
-    # Of course you have to experiment with different classifiers
-    # You can all find them through the sklearn library
-    classifier = Pipeline([
-        ('vec', vec),
-        ('cls', MultinomialNB())
+    pipeline = Pipeline([
+        ('vec', TfidfVectorizer(ngram_range=(1, 2), stop_words='english', sublinear_tf=True)),
+        ('cls', LinearSVC(C=0.5885398838335058, intercept_scaling=0.6329639882756152,
+                          max_iter=2000, multi_class='crammer_singer', random_state=42,
+                          tol=0.009741897651227838))
     ])
 
-    kfold_result = cv_kfold(
-        classifier,
-        X_train,
-        Y_train,
-        accuracy_score,
-        k=5,
-        verbose=1,
-    )
+    print('Training...')
+    _training_start_time = time.time()
+    pipeline.fit(X_train, y_train)
+    training_time = time.time() - _training_start_time
+    print(f'  time spent: {training_time:.2f}s')
+    train_f1 = metrics.f1_score(y_train, pipeline.predict(X_train), average='micro')
+    print(f'  f1-micro train score: {train_f1:.4f}')
 
-    print('mean_score', kfold_result['mean_score'])
-    print('mean_oof_score', kfold_result['mean_oof_score'])
-    print('full_oof_scores', kfold_result['full_oof_scores'])
-    print('oof_scores', kfold_result['oof_scores'])
-    print('oof_score', kfold_result['oof_score'])
+    print('Validate model...')
+    test_f1 = metrics.f1_score(y_test, pipeline.predict(X_test), average='micro')
+    print(f'  f1-micro test score: {test_f1:.4f}')
+
+    if model_file:
+        print(f'Saving model to {model_file}...')
+        joblib.dump(pipeline, model_file)
+        print('  done')
+
+if __name__ == '__main__':
+    main()

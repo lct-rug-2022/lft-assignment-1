@@ -1,11 +1,11 @@
 import typing as tp
 from collections.abc import Callable
-from copy import copy, deepcopy
+from copy import deepcopy
 import time
+from pathlib import Path
 
 import numpy as np
-import pandas as pd
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
@@ -16,7 +16,7 @@ def verbose_print(data: tp.Any, level: int, target: int) -> None:
 
 
 def read_corpus(
-        corpus_file: str,
+        corpus_file: str | Path,
         use_sentiment: bool = False,
         split: bool = False,
 ) -> tuple[list[list[str]], list[str]]:
