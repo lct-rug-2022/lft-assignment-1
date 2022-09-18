@@ -10,17 +10,18 @@ from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
 
-def verbose_print(data: tp.Any, level: int, target: int) -> None:
-    if level >= target:
-        print(' '*target + str(data))
-
-
 def read_corpus(
         corpus_file: str | Path,
         use_sentiment: bool = False,
         split: bool = False,
-) -> tuple[list[list[str]], list[str]]:
-    """TODO: add function description"""
+) -> tuple[list[list[str] | str], list[str]]:
+    """
+    Read text corpus as list
+    :param corpus_file: filename to read dataset from
+    :param use_sentiment: select between sentiment and classification labels to save
+    :param split: return each text or as a str
+    :return: list of tuples with text and corresponding label
+    """
     documents = []
     labels = []
     with open(corpus_file, encoding='utf-8') as f:
@@ -43,25 +44,21 @@ def train_validate_split(
         data_val: list,
         target_val: list,
         scorer: Callable[[tp.Any, tp.Any], float],
-        data_test: list | None = None,
         *,
         verbose: int = 1,
 ) -> dict[str, tp.Any]:
-    """Fit predict model multiple times with k-fold cross validation
+    """Fit predict model on current split
     :param model: Model to be trained
-    :param data: train data to perform k-fold cv
-    :param target: target train data
+    :param data_train: train data to perform k-fold cv
+    :param target_train: target train data
+    :param data_val: validate data to scoring
+    :param target_val: validate target to scoring
     :param scorer: function to score prediction. args: target, prediction
-    :param data_test: additional data to never train and only test on it
-    :param k: number of folds in cross validation
-    :param r: number repetitions of cv
     :param verbose: lager - verbose
     :return: dict with results of cv
     """
     data_train, data_val = np.array(data_train), np.array(data_val)
     target_train, target_val = np.array(target_train), np.array(target_val)
-
-    # exit(0)
 
     # Fit model in current fold
     if verbose > 1:
@@ -82,13 +79,6 @@ def train_validate_split(
     if verbose > 1:
         print(f'  Fold score: {score_fold}')
 
-    # Predict for test and save average
-    # if data_test is not None:
-    #     if verbose > 1:
-    #         print('Predicting test...')
-    #     # pred_test += model_fold.predict(data_test) / float(k*r)
-    #     pred_test = model_fold.predict(data_test)
-
     return {
         'pred_val': pred_val,
         'score': score_fold,
@@ -101,9 +91,7 @@ def cv_kfold(
         data: list,
         target: list,
         scorer: Callable[[tp.Any, tp.Any], float],
-        data_test: list | None = None,
         k: int = 5,
-        r: int = 1,
         *,
         verbose: int = 1,
         random_state: int = 42,
@@ -113,28 +101,15 @@ def cv_kfold(
     :param data: train data to perform k-fold cv
     :param target: target train data
     :param scorer: function to score prediction. args: target, prediction
-    :param data_test: additional data to never train and only test on it
     :param k: number of folds in cross validation
-    :param r: number repetitions of cv
     :param verbose: lager - verbose
     :param random_state: fixed random state
     :return: dict with results of cv
     """
-    assert r > 0, 'Number of repetitions should be >=1'
-    if r > 1:
-        raise NotImplementedError('TBA')
-    # If data_test is not None - predict average for it
     random_instance = np.random.RandomState(random_state)
 
     data = np.array(data)
     target = np.array(target)
-
-    if data_test:
-        data_test = np.array(data_test)
-        pred_test = np.zeros(data_test.shape[0])
-    else:
-        data_test = None
-        pred_test = None
 
     pred_train = np.empty(data.shape[0], dtype=data.dtype)
 
@@ -142,64 +117,52 @@ def cv_kfold(
     full_oof_score, split_oof_score = [], []
     times = []
 
-    rep_gen = tqdm(range(r), desc='Repetition') if verbose and r != 1 else range(r)
-    for j in rep_gen:
-        pred_split_train = np.empty(data.shape[0], dtype=data.dtype)
-        full_oof_score.append([])
+    pred_split_train = np.empty(data.shape[0], dtype=data.dtype)
+    full_oof_score.append([])
 
-        kf = KFold(n_splits=k, shuffle=True, random_state=random_instance)
-        if verbose:
-            kf_gen = tqdm(enumerate(kf.split(data)), desc='Folds', total=k, leave=(r == 1))
-        else:
-            kf_gen = enumerate(kf.split(data))
-        for i, (train_index, val_index) in kf_gen:
-            # select current train/val split
-            data_train, data_val = data[train_index], data[val_index]
-            target_train, target_val = target[train_index], target[val_index]
+    kf = KFold(n_splits=k, shuffle=True, random_state=random_instance)
+    if verbose:
+        kf_gen = tqdm(enumerate(kf.split(data)), desc='Folds', total=k)
+    else:
+        kf_gen = enumerate(kf.split(data))
+    for i, (train_index, val_index) in kf_gen:
+        # select current train/val split
+        data_train, data_val = data[train_index], data[val_index]
+        target_train, target_val = target[train_index], target[val_index]
 
-            # Fit model in current fold
-            model_fold = deepcopy(model)
-            fold_result = train_validate_split(
-                model_fold,
-                data_train, target_train,
-                data_val, target_val,
-                scorer,
-                verbose=verbose,
-            )
+        # Fit model in current fold
+        model_fold = deepcopy(model)
+        fold_result = train_validate_split(
+            model_fold,
+            data_train, target_train,
+            data_val, target_val,
+            scorer,
+            verbose=verbose,
+        )
 
-            times.append(fold_result['time'])
-            pred_val = fold_result['pred_val']
-            score_fold = fold_result['score']
+        times.append(fold_result['time'])
+        pred_val = fold_result['pred_val']
+        score_fold = fold_result['score']
 
-            # save for out-fold validation
-            # TODO: r>1 for pred_train[val_index] += pred_val / float(r)
-            pred_train[val_index] = pred_val
-            pred_split_train[val_index] = pred_val
+        # save for out-fold validation
+        pred_train[val_index] = pred_val
+        pred_split_train[val_index] = pred_val
 
-            # Score for out-fold
-            mean_score += score_fold / float(k*r)
-            full_oof_score[-1].append(score_fold)
-            if verbose > 1:
-                print(f'  Fold {i} score: {score_fold}')
-
-            # Predict for test and save average
-            if data_test is not None:
-                if verbose > 1:
-                    print('Predicting test...')
-                # pred_test += model_fold.predict(data_test) / float(k*r)
-                pred_test = model_fold.predict(data_test)
+        # Score for out-fold
+        mean_score += score_fold / float(k)
+        full_oof_score[-1].append(score_fold)
+        if verbose > 1:
+            print(f'  Fold {i} score: {score_fold}')
 
         split_oof_score.append(scorer(target, pred_split_train))
 
     return {
         'train_pred': pred_train,
-        'test_pred': pred_test,
         'mean_score': mean_score,
         'mean_oof_score': np.mean(split_oof_score),
         'oof_scores': split_oof_score,
         'full_oof_scores': full_oof_score,
         'oof_score': scorer(target, pred_train),
-        # 'model_str': str(model),
         'times': times,
         'mean_time': np.mean(times),
     }
